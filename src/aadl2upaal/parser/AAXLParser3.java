@@ -182,16 +182,29 @@ public class AAXLParser3 {
     private void process_annex(String annex_name, Element parsedAnnexSubclause, ACompoentImpl impl) {
         if (annex_name.equals("hybrid")) {
             HybirdAnnex hybirdAnnex = new HybirdAnnex("");
+            //source text pre-process
+            String sourceText= "";
+            sourceText = parsedAnnexSubclause.getAttributeValue("sourceText","");
+            sourceText = sourceText.replace("\t", "");
+            sourceText = sourceText.replace("\r", "");
+            sourceText = sourceText.replaceAll("--.*?\n", "\n");
 
             //variable
-            Element var = parsedAnnexSubclause.getChild("var");
-            for (Element v : var.getChildren("behavior_variable")) {
-                String name = v.getChild("var").getAttributeValue("name");
-                String type = v.getAttributeValue("type");
-                type = Utils.parse_var_type(type);
-                hybirdAnnex.getVariables().add(new AVar(name, type));
+            Pattern variablesCompile = Pattern.compile("variables([\\s\\S]*)?(constants|behavior)");
+            Matcher variablesMatcher = variablesCompile.matcher(sourceText);
+            if (variablesMatcher.find()) {
+                String variables = variablesMatcher.group(1);
+                String[] split = variables.split("\n");
+                Pattern varCompile = Pattern.compile("(\\S+)\\s*?:\\s*?(\\S+)");
+                for (String variable : split) {
+                    Matcher m = varCompile.matcher(variable);
+                    if (m.find()) {
+                        String name = m.group(1);
+                        String type = m.group(2);
+                        hybirdAnnex.getVariables().add(new AVar(name,type));
+                    }
+                }
             }
-
             //constants
 //            Element con = parsedAnnexSubclause.getChild("con");
 //            for(Element cn : con.getChildren("const")){
@@ -203,186 +216,122 @@ public class AAXLParser3 {
 //            }
 
             //behavior
-            Element beh = parsedAnnexSubclause.getChild("beh");
-            for (Element behavior_process : beh.getChildren("behavior_process")) {
-                HybirdProcess hp = new HybirdProcess();
-                hp.setName(behavior_process.getAttributeValue("name"));
-
-                // for skip
-                if (behavior_process.getChild("process").getAttributeValue("skip", "false").equals("skip")) {
-                    hp.setSkip(true);
-                    hybirdAnnex.getBehavior().add(hp);
-                    continue;
-                }
-
-                //process
-                for (Element process : behavior_process.getChildren("process")) {
-                    //choice
-                    Element choice = process.getChild("choice");
-                    if (choice != null) {
-                        for (Element alt : choice.getChildren("alt")) {
-                            Element relation = alt.getChild("boolean_expression").getChild("bool").getChild("relation");
-                            String relation_symbol = relation.getAttributeValue("relation_symbol");
-                            relation_symbol=relation_symbol.replace("<","&lt;").replace(">","&gt;");
-
-                            String variable_path = relation.getChild("lhs").getChild("term").getAttributeValue("variable");
-                            Element variable_element = xpfac.compile(Utils.convert2xpath(variable_path), Filters.element()).evaluateFirst(doc.getRootElement());
-                            AVar left = null;
-                            for (AVar v : hybirdAnnex.getVariables()) {
-                                if (v.getName().equals(variable_element.getAttributeValue("name"))) {
-                                    left = v;
-                                    break;
-                                }
-                            }
-
-                            String integer_literal = relation.getChild("rhs").getChild("term").getAttributeValue("integer_literal");
-
-                            String to_process_path = alt.getAttributeValue("behavior_process");
-                            Element to_process_element = xpfac.compile(Utils.convert2xpath(to_process_path), Filters.element()).evaluateFirst(doc.getRootElement());
-                            //for skip
-                            if (to_process_element.getChild("process").getAttributeValue("skip", "xx").equals("skip")) {
-                                HContinuous hContinuous = new HContinuous();
-                                hContinuous.setRank(-1);
-                                hContinuous.setLeft(left);
-                                hContinuous.alt=relation_symbol;
-                                hContinuous.setRight(Integer.valueOf(integer_literal));
-                                hp.getEvolutions().add(hContinuous);
-                            }else {
-                                HChoice hChoice = new HChoice();
-                                String process_name = to_process_element.getAttributeValue("name");
-                                hChoice.guard=left.getName()+relation_symbol+integer_literal;
-                                hChoice.end=hp;
-                                hp.choice=hChoice;
-                            }
-                        }
-                    }
-
-                    //continuous_evolution
-                    Element continuous_evolution = process.getChild("continuous_evolution");
-                    if (continuous_evolution != null) {
-                        // var
-                        Element left = continuous_evolution.getChild("lhs").getChild("diff").getChild("time_derivative");
-                        String order = left.getAttributeValue("order");
-
-
-                        XPathExpression xp = xpfac.compile(Utils.convert2xpath(left.getAttributeValue("x")), Filters.element());
-                        Element x = (Element) xp.evaluateFirst(doc.getRootElement());
-
-                        String right_path = continuous_evolution.getChild("rhs").getChild("diff").getAttributeValue("variable", "-1");
-                        String right_name;
-                        if (right_path.equals("-1")) {
-                            right_name = continuous_evolution.getChild("rhs").getChild("diff").getAttributeValue("numeric_literal");
-                        } else {
-                            Element right = (Element) xpfac.compile(Utils.convert2xpath(right_path), Filters.element()).evaluateFirst(doc.getRootElement());
-                            right_name = right.getAttributeValue("name");
-                        }
-                        HContinuous hContinuous = new HContinuous();
-                        hContinuous.setRank(Integer.valueOf(order));
-                        hContinuous.setLeft(new AVar(x.getAttributeValue("name"), ""));
-                        hContinuous.setRight(new AVar(right_name, ""));
-
-                        hp.getEvolutions().add(hContinuous);
-
-
-                        //interrupt
-                        Element interrupt = continuous_evolution.getChild("interrupt");
-                        if (interrupt != null) {
-                            HInterrupt hInterrupt = new HInterrupt();
-                            Element communication_interrupt = interrupt.getChild("communication_interrupt");
-                            //String bp_path = communication_interrupt.getAttributeValue("bp");
-
-                            //hInterrupt.setEnd();
-
-                            for (Element communication : communication_interrupt.getChildren("communication")) {
-                                HCommunication hc1;
-                                hc1 = new HCommunication();
-                                if (communication.getAttributeValue("direction").equals("!")) {
-                                    hc1.setDirection(APort.out);
-                                } else {
-                                    hc1.setDirection(APort.in);
-                                }
-                                String port_path = communication.getAttributeValue("port");
-                                Element h_port = (Element) xpfac.compile(Utils.convert2xpath(port_path), Filters.element()).evaluateFirst(doc.getRootElement());
-                                hc1.setP(new ADataPort(h_port.getAttributeValue("name")));
-                                String variable_path = communication.getAttributeValue("variable");
-                                Element h_var = (Element) xpfac.compile(Utils.convert2xpath(variable_path), Filters.element()).evaluateFirst(doc.getRootElement());
-                                hc1.setVar(new AVar(h_var.getAttributeValue("name"), ""));
-                                hInterrupt.getComm().add(hc1);
-                            }
-
-                            hp.setInterrupt(hInterrupt);
-                        }
-
-                    }
-
-                    //assignment
-                    Element assignment = process.getChild("assignment");
-                    if (assignment != null) {
-                        Hassignment hassignment = new Hassignment();
-                        String local_variable_path = assignment.getAttributeValue("local_variable");
-                        Element local_variable = xpfac.compile(Utils.convert2xpath(local_variable_path), Filters.element()).evaluateFirst(doc.getRootElement());
-
-                        String val = assignment.getChild("expression").getChild("term").getAttributeValue("integer_literal", "null");
-
-                        String val_d = assignment.getChild("expression").getChild("term").getAttributeValue("real_literal", "null");
-                        String minus = assignment.getChild("expression").getChild("term").getAttributeValue("unary_minus", "false");
-                        if (val.equals("null") && val_d.equals("null")) {
-                            //*
-                            String right = "";
-                            Element expression = assignment.getChild("expression");
-                            String operator = expression.getAttributeValue("operator");
-                            List<Element> terms = expression.getChildren("term");
-                            String var_1 = xpfac.compile(Utils.convert2xpath(terms.get(0).getAttributeValue("variable")), Filters.element()).evaluateFirst(doc.getRootElement()).getAttributeValue("name");
-                            if (terms.get(0).getAttributeValue("unary_minus", "false").equals("true")) {
-                                var_1 = "-" + var_1;
-                            }
-                            String var_2 = xpfac.compile(Utils.convert2xpath(terms.get(1).getAttributeValue("variable")), Filters.element()).evaluateFirst(doc.getRootElement()).getAttributeValue("name");
-                            if (terms.get(1).getAttributeValue("unary_minus", "false").equals("true")) {
-                                var_2 = "-" + var_2;
-                            }
-
-                            right = var_1 + operator + var_2;
-                            hassignment.right = right;
-                        }
-                        if (!val.equals("null")) {
-                            if (minus.equals("true")) {
-                                hassignment.setVal(Integer.valueOf(val) * -1);
-                            } else {
-                                hassignment.setVal(Integer.valueOf(val));
-                            }
-                        }
-                        if (!val_d.equals("null")) {
-                            if (minus.equals("true")) {
-                                hassignment.setVal(Double.valueOf(val_d) * -1);
-                            } else {
-                                hassignment.setVal(Double.valueOf(val_d));
-                            }
-                        }
-
-                        hassignment.setVar(new AVar(local_variable.getAttributeValue("name"), ""));
-                        hp.getAsssigments().add(hassignment);
-                    }
-                    //repete
-                    Element repetition = process.getChild("repetition");
-                    if (repetition != null) {
-                        String repete_process_path = repetition.getAttributeValue("behavior_process");
-                        Element repete_process = (Element) xpfac.compile(Utils.convert2xpath(repete_process_path), Filters.element()).evaluateFirst(doc.getRootElement());
-
-                        for (HybirdProcess p : hybirdAnnex.getBehavior()) {
-                            if (p.getName().equals(repete_process.getAttributeValue("name"))) {
-                                p.isRepete = true;
-                                hp.subProcess = p;
-                                break;
-                            }
-
-                        }
-                        hp.isIinitial = true;
+            Pattern behaviorCompile = Pattern.compile("behavior(.*)",Pattern.COMMENTS|Pattern.DOTALL);
+            Matcher behaviorMatcher = behaviorCompile.matcher(sourceText);
+            Pattern statementCompile = Pattern.compile("(\\S*)\\s*::=(.*)");
+            Pattern communicateCompile = Pattern.compile("^(.*)\\[\\[\\>(.*)\\]\\]\\>\\s*(\\S+)");
+            Pattern continuousCompile = Pattern.compile("'\\s*DT\\s+(\\d+)\\s+(\\S+)\\s*=\\s*(\\S.*?)\\s*'");
+            Pattern channelCompile = Pattern.compile("(\\S+)(\\?|\\!)(\\(\\S+\\))?");
+            Pattern assignmentCompile = Pattern.compile("^\\s*(\\S+)\\s*:=\\s*(.*?)\\s*$");
+            Pattern intCompile = Pattern.compile("(-?\\d+)");
+            Pattern doubleCompile = Pattern.compile("(-?\\d*\\.\\d+)");
+            Pattern repetitionCompile = Pattern.compile("REPEAT\\s*\\(\\s*(\\S+)\\s*\\)");
+            if (behaviorMatcher.find()) {
+                String behavior = behaviorMatcher.group(1);
+                String[] split = behavior.split("\n");
+                ArrayList<String> statements = new ArrayList<String>();
+                for(String beh: split){
+                    if(beh.contains("::=")){
+                        statements.add(statements.size(),beh);
+                    }else if(!statements.isEmpty()){
+                        String origin = statements.remove(statements.size()-1);
+                        statements.add(statements.size(),origin.concat(beh));
                     }
                 }
-                hybirdAnnex.getBehavior().add(hp);
+                for(String statement:statements){
+                    Matcher statementMatcher = statementCompile.matcher(statement);
+                    if(statementMatcher.find()){
+                        String left = statementMatcher.group(1);
+                        String right = statementMatcher.group(2);
+                        HybirdProcess hp = new HybirdProcess();
+                        hp.setName(left);
+                        //skip
+                        if(right.contains("skip")) {
+                            hp.setSkip(true);
+                            hybirdAnnex.getBehavior().add(hp);
+                        }else{
+                            //interrupt
+                            Matcher communicateMatcher = communicateCompile.matcher(right);
+                            if(communicateMatcher.find()){
+                                String continuous = communicateMatcher.group(1);
+                                String channels = communicateMatcher.group(2);
+                                String nextprocess = communicateMatcher.group(3);
+                                //continuous
+                                String[] conts = continuous.split("&");
+                                for(String cont:conts){
+                                    Matcher continuousMatcher = continuousCompile.matcher(cont);
+                                    if(continuousMatcher.find()) {
+                                        String order = continuousMatcher.group(1);
+                                        String variable = continuousMatcher.group(2);
+                                        String value = continuousMatcher.group(3);
+                                        HContinuous hContinuous = new HContinuous();
+                                        hContinuous.setRank(Integer.parseInt(order));
+                                        hContinuous.setLeft(new AVar(variable, ""));
+                                        hContinuous.setRight(new AVar(value, ""));
+                                        hp.getEvolutions().add(hContinuous);
+                                    }
+                                }
+                                //interrupt
+                                HInterrupt hInterrupt = new HInterrupt();
+                                String[] comms = channels.split(",");
+                                for(String comm:comms){
+                                    Matcher channelMatcher = channelCompile.matcher(comm);
+                                    if(channelMatcher.find()){
+                                        String channel = channelMatcher.group(1);
+                                        String direction = channelMatcher.group(2);
+                                        String variable = channelMatcher.group(3);
+                                        HCommunication hc1 = new HCommunication();
+                                        if(direction.equals("!")){
+                                            hc1.setDirection(APort.out);
+                                        }else{
+                                            hc1.setDirection(APort.in);
+                                        }
+                                        hc1.setP(new ADataPort(channel));
+                                        if(variable!=null) {
+                                            hc1.setVar(new AVar(variable, ""));
+                                        }
+                                        hInterrupt.getComm().add(hc1);
+                                    }
+                                }
+                                hp.setInterrupt(hInterrupt);
+                            }else{
+                                String[] subprocesses = right.split("&");
+                                for(String subprocess:subprocesses){
+                                    //assignment
+                                    Matcher assignmentMatcher = assignmentCompile.matcher(subprocess);
+                                    if(assignmentMatcher.find()){
+                                        String var = assignmentMatcher.group(1);
+                                        String value = assignmentMatcher.group(2);
+                                        Hassignment hassignment = new Hassignment();
+                                        hassignment.setVar(new AVar(var,""));
+                                        if(doubleCompile.matcher(value).matches()){
+                                            hassignment.setVal(Double.parseDouble(value));
+                                        }else if(intCompile.matcher(value).matches()){
+                                            hassignment.setVal(Integer.parseInt(value));
+                                        }else{
+                                            hassignment.right = value;
+                                        }
+                                        hp.getAssignments().add(hassignment);
+                                    }
+                                    Matcher repetitionMatcher = repetitionCompile.matcher(subprocess);
+                                    if(repetitionMatcher.find()){
+                                        String repeat = repetitionMatcher.group(1);
+                                        for(HybirdProcess p : hybirdAnnex.getBehavior()){
+                                            if(p.getName().equals(repeat)){
+                                                p.isRepete =true;
+                                                hp.subProcess = p;
+                                                break;
+                                            }
+                                        }
+                                        hp.isIinitial = true;
+                                    }
+                                }
+                            }
+                            hybirdAnnex.getBehavior().add(hp);
+                        }
+                    }
+                }
             }
-
-
             impl.getAnnexs().add(hybirdAnnex);
         } else if (annex_name.equals("BLESS")) {
             BLESSAnnex ba = new BLESSAnnex("");
@@ -394,39 +343,60 @@ public class AAXLParser3 {
             }
 
             //var
-            Element var = parsedAnnexSubclause.getChild("var");
+            Element var = parsedAnnexSubclause.getChild("variables");
             if (var != null) {
                 for (Element bv : var.getChildren("bv")) {
-                    String v_name = bv.getChild("variable_names").getChild("behavior_variable").getAttributeValue("var");
-                    String v_type = bv.getChild("type").getAttributeValue("data_component_reference");
-                    v_type = v_type.substring(v_type.indexOf("#") + 1).replace(".", "::");
+                    String v_name = bv.getChild("variable_names").getAttributeValue("variable");
+                    Element type = bv.getChild("type");
+                    String v_type = "";
+//                    Element nt = bv.getChild("nt");
+//                    if(nt != null){
+//                        v_type = nt.getAttributeValue("assertion_type");
+//                    }else{
+//                        v_type = type.getAttributeValue("data_component_reference");
+//                        Pattern typePattern = Pattern.compile("#(\\w+)\\.(\\w+)");
+//                        Matcher typeMatcher = typePattern.matcher(v_type);
+//                        if(typeMatcher.find()){
+//                            String ns = typeMatcher.group(1);
+//                            String t = typeMatcher.group(2);
+//                            v_type = ns + "::" + t;
+//                        }
+//                    }
                     v_type = "double";
                     BVar v = new BVar(v_name, v_type);
 
                     Element expression = bv.getChild("expression");
                     if (expression != null) {
-                        Element init_val = expression.getChild("se").getChild("v").getChild("const ");
-                        if (init_val != null) {
-                            int val = Integer.valueOf(init_val.getAttributeValue("integer_literal", "0"));
-                            v.setInitVal(val);
+                        Element init_val = expression.getChild("se").getChild("value");
+                        String nul = init_val.getAttributeValue("nul","0");
+                        if(nul=="true"){
+                            v.setInitVal(0);
+                        }
+                        Element val = init_val.getChild("const");
+                        if(val!=null){
+                            v.setInitVal(Integer.valueOf(val.getChild("number").getAttributeValue("integer","0")));
                         }
                     }
-
                     ba.getVariables().add(v);
                 }
             }
-
             //states
             List<Element> states = parsedAnnexSubclause.getChildren("states");
             for (Element state : states) {
-
                 Location loc = new Location(state.getAttributeValue("name"), null);
-                String tag = state.getAttributeValue("tag", "null");
-                if (tag.equals("initial")) {
+                String initial = state.getAttributeValue("initial", "null");
+                String complete = state.getAttributeValue("complete", "null");
+//                String finalstate = state.getAttributeValue("final", "null");
+                if (initial.equals("true")) {
                     loc.isInitial = true;
-                } else if (tag.equals("complete")) {
                     loc.isCommitted = true;
                 }
+//                if (complete.equals("true")) {
+//                    loc.isCommitted = true;
+//                }
+//                if (finalstate.equals("true")) {
+//                    loc.is = true;
+//                }
                 ba.getLocs().add(loc);
             }
             //transitions
@@ -441,7 +411,7 @@ public class AAXLParser3 {
                     Element dst_ele = (Element) xpfac.compile(Utils.convert2xpath(destination), Filters.element()).evaluateFirst(doc.getRootElement());
                     Location dst_loc = Utils.find_state_by_name(dst_ele.getAttributeValue("name", ""), ba.getLocs());
 
-                    String bt_name = bt.getChild("transition_label").getAttributeValue("name");
+                    String bt_name = bt.getChild("transition_label").getAttributeValue("id");
                     BTransition bt_aadl = new BTransition();
                     bt_aadl.setSrc(src_loc);
                     bt_aadl.setDst(dst_loc);
@@ -477,7 +447,7 @@ public class AAXLParser3 {
                     ArrayList<BUpdate> bu = new ArrayList<>();
 
 
-                    Element behavior = bt.getChild("behavior");
+                    Element behavior = bt.getChild("actions");
                     List<Element> action = null;
                     if (behavior != null) {
                         //normal
@@ -499,16 +469,9 @@ public class AAXLParser3 {
             UncertaintyAnnex ua = new UncertaintyAnnex("");
 
             String sourceText = parsedAnnexSubclause.getAttributeValue("sourceText");
-
-            String SEP = "\n \t\t\t";
-
             sourceText = sourceText.replace("\t", "");
-            //System.out.println(sourceText);
-
-//            String[] split = sourceText.split(SEP);
-//            for (String s: split){
-//                System.out.println("line:"+s);
-//            }
+            sourceText = sourceText.replace("\r", "");
+            sourceText = sourceText.replaceAll("--.*?\n", "\n");
 
             //var
             Pattern compile = Pattern.compile("variables([\\s\\S]*)distributions");
@@ -568,7 +531,7 @@ public class AAXLParser3 {
             }
 
             //dist
-            compile = Pattern.compile("distributions([\\s\\S]*)queries");
+            compile = Pattern.compile("distributions([\\s\\S]*)(queries)?");
             matcher = compile.matcher(sourceText);
 //            matcher.
             if (matcher.find()) {
@@ -641,7 +604,9 @@ public class AAXLParser3 {
                     //inport
                     if (communication.getChild("pi") != null) {
                         String port_name = communication.getChild("pi").getAttributeValue("port");
-                        String val = communication.getChild("pi").getChild("var").getChild("pn").getAttributeValue("identifier");
+                        Element port_ele = (Element) xpfac.compile(Utils.convert2xpath(port_name), Filters.element()).evaluateFirst(doc.getRootElement());
+                        port_name = port_ele.getAttributeValue("name");
+                        String val = communication.getChild("pi").getChild("variable").getAttributeValue("id");
                         BVar varByName = Utils.getVarByName(val, ba.getVariables());
                         //TODO 应该用connection来查找
                         APort port_by_name = Utils.find_port_by_name(amodel, port_name);
@@ -655,6 +620,8 @@ public class AAXLParser3 {
                         //outport
                         //event
                         String port_name = communication.getChild("po").getAttributeValue("port");
+                        Element port_ele = (Element) xpfac.compile(Utils.convert2xpath(port_name), Filters.element()).evaluateFirst(doc.getRootElement());
+                        port_name = port_ele.getAttributeValue("name");
                         APort port_by_name = Utils.find_port_by_name(amodel, port_name);
                         if (port_by_name == null) {
                             //还没初始化出来
@@ -668,17 +635,17 @@ public class AAXLParser3 {
                         String val = null;
                         boolean minus = false;
                         if (eor != null) {
-                            Element child = eor.getChild("exp1").getChild("se");
+                            Element child = eor.getChild("exp").getChild("se");
 
                             String minus1 = child.getAttributeValue("minus", "false");
                             if (minus1.equals("true")) {
                                 minus = true;
                             }
-                            Element variable = child.getChild("v").getChild("variable");
+                            Element variable = child.getChild("value").getChild("variable");
                             if (variable != null) {
-                                val = child.getChild("v").getChild("variable").getChild("pn").getAttributeValue("identifier");
+                                val = variable.getAttributeValue("id");
                             }
-                            Element const_v = child.getChild("v").getChild("const");
+                            Element const_v = child.getChild("value").getChild("const");
                             if (const_v != null) {
                                 //sb:rate
                                 //val=

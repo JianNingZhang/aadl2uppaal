@@ -8,14 +8,14 @@ public class HybirdProcess {
 	private ArrayList<HContinuous> evolutions;
     public HChoice choice;
 	private HInterrupt interrupt;
-	private ArrayList<Hassignment> asssigments;
+	private ArrayList<Hassignment> assignments;
     public boolean isRepete=false;
 	public boolean isIinitial = false;
     public HybirdProcess subProcess=null;
 
     public HybirdProcess(){
         evolutions = new ArrayList<HContinuous>();
-        asssigments = new ArrayList<Hassignment>();
+        assignments = new ArrayList<Hassignment>();
     }
 
 	public String getName() {
@@ -50,18 +50,18 @@ public class HybirdProcess {
 		this.interrupt = interrupt;
 	}
 
-	public ArrayList<Hassignment> getAsssigments() {
-		return asssigments;
+	public ArrayList<Hassignment> getAssignments() {
+		return assignments;
 	}
 
-	public void setAsssigments(ArrayList<Hassignment> asssigments) {
-		this.asssigments = asssigments;
+	public void setAssignments(ArrayList<Hassignment> assignments) {
+		this.assignments = assignments;
 	}
 
     public String getStringAssignment(){
         String ret="";
         boolean isFirst=true;
-        for(Hassignment ass:asssigments){
+        for(Hassignment ass: assignments){
             if(isFirst){
                 ret+=ass.toString();
                 isFirst=false;

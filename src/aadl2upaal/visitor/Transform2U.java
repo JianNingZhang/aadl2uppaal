@@ -7,8 +7,6 @@ import java.util.regex.Pattern;
 import aadl2upaal.aadl.*;
 import aadl2upaal.upaal.*;
 
-import javax.management.RuntimeErrorException;
-
 
 public class Transform2U implements NodeVisitor {
 
@@ -187,7 +185,9 @@ public class Transform2U implements NodeVisitor {
                             if (comm.getDirection() == APort.out) {
                                 loc.setUrgent(true);
                             }
-                            add_trans.chann.value = comm.getVar().getName();
+                            if(comm.getVar()!=null) {
+                                add_trans.chann.value = comm.getVar().getName();
+                            }
                             t.trans.add(add_trans);
                             t.locs.add(int_loc);
                             loc = int_loc;
@@ -214,7 +214,7 @@ public class Transform2U implements NodeVisitor {
                         }
                         Transition transition = new Transition(loc, loc, 0, "");
                         transition.setGuard(choice.guard);
-                        transition.setUpdate(process.getAsssigments().get(0).toString());
+                        transition.setUpdate(process.getAssignments().get(0).toString());
                         t.trans.add(transition);
                     }
                 }
@@ -313,14 +313,15 @@ public class Transform2U implements NodeVisitor {
             t.declarations += "double " + v.getName() + ";\n";
 
             if (v.getType().equals("time")) {
-                t.declarations += "clock d_t;\n";// for delay location
-                //��ǰ�˲���һ���ߺ�һ��location
+                if(!t.declarations.contains("clock d_t;")) {
+                    t.declarations += "clock d_t;\n";// for delay location
+                }
                 Location delay_location = null;
                 Transition delay_trans = null;
                 for (Transition trans : t.getTrans()) {
                     if (trans.chann != null && trans.chann.getName().endsWith(v.getApplied().getName())) {
                         delay_location = new Location("temp" + String.valueOf(i[0]), null);
-                        if (trans.dst.invariant == "") {
+                        if (trans.dst.invariant.isEmpty()) {
                             delay_location.invariant = " d_t &lt;=" + v.getName();
                         } else {
                             delay_location.invariant = trans.dst.invariant + " &amp;&amp; d_t &lt;=" + v.getName();
@@ -339,7 +340,6 @@ public class Transform2U implements NodeVisitor {
                 t.trans.add(delay_trans);
                 t.locs.add(delay_location);
             } else if (v.getType().equals("static price")) {
-                //��declaration �г�ʼ��
                 String insertDeclared="";
                 if (v.applied_var.equals("")) {
                     insertDeclared = v.getName() + "=" + v.dist.toString() + ";";
@@ -389,7 +389,6 @@ public class Transform2U implements NodeVisitor {
 
         if (ua != null) {
             if (annexs.size() == 1) {
-                //��������UA
                 ACompoentDeclare declare = null;
                 for (ACompoent comp : amodel.comps) {
                     if (comp.getCompoentImpl() == impl) {
@@ -488,7 +487,7 @@ public class Transform2U implements NodeVisitor {
             guard = matcher.replaceAll(".seg[nSeg]." + matcher.group(1));
         }
 
-        compile = Pattern.compile("CTCS_Properties::start");
+        compile = Pattern.compile("#CTCS_Properties::start");
         matcher = compile.matcher(guard);
         if (matcher.find()) {
             guard = matcher.replaceAll("=0");

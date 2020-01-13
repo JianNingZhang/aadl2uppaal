@@ -5,7 +5,6 @@ import javax.xml.xpath.*;
 
 import aadl2upaal.aadl.*;
 import aadl2upaal.upaal.Location;
-import org.jdom2.*;
 import org.w3c.dom.*;
 import org.w3c.dom.Document;
 
@@ -253,13 +252,13 @@ public final class Utils {
         Hassignment hassignment = new Hassignment();
         hassignment.setVal(0);
         hassignment.setVar(new AVar("s", ""));
-        RunningTrain.getAsssigments().add(hassignment);
+        RunningTrain.getAssignments().add(hassignment);
         hassignment.setVal(0);
         hassignment.setVar(new AVar("a", ""));
-        RunningTrain.getAsssigments().add(hassignment);
+        RunningTrain.getAssignments().add(hassignment);
         hassignment.setVal(0);
         hassignment.setVar(new AVar("v", ""));
-        RunningTrain.getAsssigments().add(hassignment);
+        RunningTrain.getAssignments().add(hassignment);
         RunningTrain.subProcess = train_process;
 
         ACompoentImpl train_impl = new ACompoentImpl("Train");
@@ -547,14 +546,14 @@ public final class Utils {
         Hassignment hassignment = new Hassignment();
         hassignment.setVal(10);
         hassignment.setVar(new AVar("x", ""));
-        Start.getAsssigments().add(hassignment);
+        Start.getAssignments().add(hassignment);
         hassignment = new Hassignment();
         hassignment.setVal(0);
         hassignment.setVar(new AVar("v", ""));
-        Start.getAsssigments().add(hassignment);
+        Start.getAssignments().add(hassignment);
         hassignment.right = "-c*v ";
         hassignment.setVar(new AVar("v", ""));
-        Ball.getAsssigments().add(hassignment);
+        Ball.getAssignments().add(hassignment);
         Start.subProcess = Ball;
 
         HChoice hChoice = new HChoice();

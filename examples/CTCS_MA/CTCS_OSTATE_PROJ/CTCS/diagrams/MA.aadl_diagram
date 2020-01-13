@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="ASCII"?>
+<diagram:Diagram xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:diagram="http://osate.org/diagram" formatVersion="7">
+  <element uuid="312403b8-20ec-4779-b4be-5e5ae3360f03" manual="true">
+    <element uuid="e88d9f52-7dac-47b0-a2b3-2cdd0c7f88af" manual="true">
+      <bo>
+        <seg>classifier</seg>
+        <seg>controller</seg>
+      </bo>
+      <position x="227.0" y="203.0"/>
+      <size width="123.0" height="35.0"/>
+    </element>
+    <element uuid="44b84831-0b40-4161-9554-dcfe3a0972f2" manual="true">
+      <element uuid="a3a9764f-92a2-4fca-ad25-271721442467" manual="true">
+        <bo>
+          <seg>realization</seg>
+        </bo>
+        <bendpoints>
+          <point x="223.0" y="232.5"/>
+          <point x="235.0" y="232.5"/>
+        </bendpoints>
+      </element>
+      <bo>
+        <seg>classifier</seg>
+        <seg>controller.impl</seg>
+      </bo>
+      <position x="52.0" y="203.0"/>
+      <size width="155.0" height="35.0"/>
+    </element>
+    <element uuid="dbb6d922-085c-4189-9739-7adebf6a1890" manual="true">
+      <bo>
+        <seg>classifier</seg>
+        <seg>pcontroller</seg>
+      </bo>
+      <position x="236.0" y="258.0"/>
+      <size width="131.0" height="35.0"/>
+    </element>
+    <element uuid="3c5eebcc-0a92-4e44-ae85-206d8bdb3a9b" manual="true">
+      <element uuid="a0f72781-6c37-4716-98f0-402721abe33f" manual="true">
+        <bo>
+          <seg>realization</seg>
+        </bo>
+        <bendpoints>
+          <point x="232.0" y="287.5"/>
+          <point x="244.0" y="287.5"/>
+        </bendpoints>
+      </element>
+      <bo>
+        <seg>classifier</seg>
+        <seg>pcontroller.impl</seg>
+      </bo>
+      <position x="52.0" y="258.0"/>
+      <size width="164.0" height="35.0"/>
+    </element>
+    <element uuid="fba2b356-1503-4fc6-9df7-5126c72dbca3" manual="true">
+      <bo>
+        <seg>classifier</seg>
+        <seg>rbc</seg>
+      </bo>
+      <position x="191.0" y="38.0"/>
+      <size width="87.0" height="35.0"/>
+    </element>
+    <element uuid="59f4260c-f2f6-4ff2-81b5-2aac4f83eb6e" manual="true">
+      <element uuid="f0214f56-6495-4f46-8760-3c75c08a701f" manual="true">
+        <bo>
+          <seg>realization</seg>
+        </bo>
+        <bendpoints>
+          <point x="187.0" y="67.5"/>
+          <point x="199.0" y="67.5"/>
+        </bendpoints>
+      </element>
+      <bo>
+        <seg>classifier</seg>
+        <seg>rbc.impl</seg>
+      </bo>
+      <position x="52.0" y="38.0"/>
+      <size width="119.0" height="35.0"/>
+    </element>
+    <element uuid="cba34ee7-87d9-4adc-82f3-6cd8c31a5abd" manual="true">
+      <bo>
+        <seg>classifier</seg>
+        <seg>sysma</seg>
+      </bo>
+      <position x="203.0" y="148.0"/>
+      <size width="94.0" height="35.0"/>
+    </element>
+    <element uuid="dce03b84-3eac-470a-bf60-c914dccaf57b" manual="true">
+      <element uuid="0490b47a-f1f3-41a7-bc23-39cd06849747" manual="true">
+        <bo>
+          <seg>realization</seg>
+        </bo>
+        <bendpoints>
+          <point x="199.0" y="177.5"/>
+          <point x="211.0" y="177.5"/>
+        </bendpoints>
+      </element>
+      <bo>
+        <seg>classifier</seg>
+        <seg>sysma.impl</seg>
+      </bo>
+      <position x="52.0" y="148.0"/>
+      <size width="131.0" height="35.0"/>
+    </element>
+    <element uuid="02f391a8-6b0e-4c3f-80ae-2d2e198cda72" manual="true">
+      <bo>
+        <seg>classifier</seg>
+        <seg>train</seg>
+      </bo>
+      <position x="196.0" y="93.0"/>
+      <size width="92.0" height="35.0"/>
+    </element>
+    <element uuid="f965b68e-7214-4e7c-afe3-119598fe4c4d" manual="true">
+      <element uuid="85b959dc-2742-4381-9661-b2aae396ab95" manual="true">
+        <bo>
+          <seg>realization</seg>
+        </bo>
+        <bendpoints>
+          <point x="192.0" y="122.5"/>
+          <point x="204.0" y="122.5"/>
+        </bendpoints>
+      </element>
+      <bo>
+        <seg>classifier</seg>
+        <seg>train.impl</seg>
+      </bo>
+      <position x="52.0" y="93.0"/>
+      <size width="124.0" height="35.0"/>
+    </element>
+    <bo>
+      <seg>package</seg>
+      <seg>ma</seg>
+    </bo>
+    <position x="12.0" y="12.0"/>
+    <size width="379.0" height="305.0"/>
+  </element>
+  <config type="package" connectionPrimaryLabelsVisible="false">
+    <enabledAadlProperties/>
+    <context>
+      <seg>package</seg>
+      <seg>ma</seg>
+    </context>
+  </config>
+</diagram:Diagram>

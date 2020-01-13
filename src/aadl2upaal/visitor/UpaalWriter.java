@@ -42,12 +42,13 @@ public class UpaalWriter {
         for (Channel ch : model.channels())
             out.printf("broadcast chan %s;", ch);
         for (Channel ch : model.chans) {
-            out.println("urgent chan " + ch.getName() + ";");
+            out.println("broadcast chan " + ch.getName() + ";");
         }
         for (AVar var : model.values) {
             out.println(var.getType() + " " + var.getName() + ";");
         }
         // ²ÎÊý
+        out.println("// Place global declarations here.");
         out.println("const int PERIOD=2;\nconst int MAsize=3;\nconst int SR=3;\nconst int b=1;\nconst int start=0;\nconst int SB_Rate=-8;\nconst int EB_Rate=-10;\nconst double PI = 3.1415926;\n");
 
         out.println("//------------Lib for Distributions-------------------------");
@@ -175,19 +176,26 @@ public class UpaalWriter {
         out.println("</system>");
 
         // queries
+        Pattern simulateQueries = Pattern.compile("simulate\\s*(\\d+)\\s*(\\{.*\\})\\s*under\\s*(\\d+)");
         out.println("<queries>");
         for (String query : model.queries) {
             out.println("<query>");
-
+            Matcher simulateMatcher = simulateQueries.matcher(query);
             String right_query="";
-            String[] unders = query.split("under");
-            if(unders.length<2){
-                right_query="Pr[<=1000](<>"+unders[0]+")";
-            }else {
-                right_query="Pr[<="+unders[1]+"](<>"+unders[0]+")";
+            if(simulateMatcher.find()){
+                String t = simulateMatcher.group(1);
+                String body = simulateMatcher.group(2);
+                String time = simulateMatcher.group(3);
+                right_query = "simulate "+t+" [<="+ time+"] "+ body;
+
+            }else{
+                String[] unders = query.split("under");
+                if(unders.length<2){
+                    right_query="Pr[<=1000](<>"+unders[0]+")";
+                }else {
+                    right_query="Pr[<="+unders[1]+"](<>"+unders[0]+")";
+                }
             }
-
-
             out.println("<formula>" + right_query.replace("&","&amp;").replace(">","&gt;").replace("<","&lt;") + "</formula>");
             out.println("</query>");
         }

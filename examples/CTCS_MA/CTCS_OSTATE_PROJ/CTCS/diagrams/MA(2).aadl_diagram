@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="ASCII"?>
+<diagram:Diagram xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:diagram="http://osate.org/diagram" formatVersion="7">
+  <element uuid="d2b04e27-43ff-4322-a1bb-49da843e6df8" manual="true">
+    <bo>
+      <seg>package</seg>
+      <seg>ma</seg>
+    </bo>
+    <position x="12.0" y="12.0"/>
+    <size width="200.0" height="100.0"/>
+  </element>
+  <config type="package">
+    <enabledAadlProperties>
+      <property>deployment_properties::allowed_memory_binding</property>
+      <property>deployment_properties::actual_function_binding</property>
+      <property>deployment_properties::allowed_connection_binding</property>
+      <property>deployment_properties::allowed_processor_binding</property>
+      <property>deployment_properties::actual_memory_binding</property>
+      <property>deployment_properties::actual_processor_binding</property>
+      <property>deployment_properties::actual_connection_binding</property>
+    </enabledAadlProperties>
+    <context>
+      <seg>package</seg>
+      <seg>ma</seg>
+    </context>
+  </config>
+</diagram:Diagram>

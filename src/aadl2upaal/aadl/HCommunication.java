@@ -5,6 +5,16 @@ public class HCommunication {
 	private int direction = APort.in;
 	private AVar var;
 
+	public int getSeq() {
+		return seq;
+	}
+
+	public void setSeq(int seq) {
+		this.seq = seq;
+	}
+
+	private int seq = 0;
+
 	public APort getP() {
 		return p;
 	}

@@ -5,6 +5,7 @@ public class UNode {
 
 	public UNode(){
 		super();
+		name = "";
 	}
 	
 	public UNode(String name) {
